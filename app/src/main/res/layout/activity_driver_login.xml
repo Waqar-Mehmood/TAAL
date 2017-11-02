@@ -1,36 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.pak_pc.sampleuber.DriverLoginActivity"
     android:orientation="vertical">
 
     <EditText
         android:id="@+id/email"
-        android:hint="Email here"
-        android:textAlignment="center"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:hint="Email here"
+        android:textAlignment="center" />
+
     <EditText
         android:id="@+id/password"
-        android:hint="passowrd here"
-        android:textAlignment="center"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:hint="passowrd here"
+        android:textAlignment="center" />
+
     <Button
         android:id="@+id/login"
-        android:text="Login"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:text="Login" />
 
     <Button
         android:id="@+id/register"
-        android:text="Register here"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
+        android:layout_height="wrap_content"
+        android:text="Register here" />
 
 
 </LinearLayout>

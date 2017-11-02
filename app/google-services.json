@@ -1,35 +1,35 @@
 {
   "project_info": {
-    "project_number": "608156548434",
-    "firebase_url": "https://sampleuber-38713.firebaseio.com",
-    "project_id": "sampleuber-38713",
-    "storage_bucket": "sampleuber-38713.appspot.com"
+    "project_number": "92448507536",
+    "firebase_url": "https://uberclone-56a0d.firebaseio.com",
+    "project_id": "uberclone-56a0d",
+    "storage_bucket": "uberclone-56a0d.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:608156548434:android:9c7628fbcd3b4bb8",
+        "mobilesdk_app_id": "1:92448507536:android:76c8fab268e62fd2",
         "android_client_info": {
-          "package_name": "com.example.pak_pc.sampleuber"
+          "package_name": "com.android.uberclone"
         }
       },
       "oauth_client": [
         {
-          "client_id": "608156548434-hv8s4rku2a78ccdvvki9ceenho92g80i.apps.googleusercontent.com",
+          "client_id": "92448507536-uajqpupbl3j1mvt2vr5uc1h8hji0j4ps.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.pak_pc.sampleuber",
-            "certificate_hash": "94bf4b048776956dd469de8fb489d9737680c3a5"
+            "package_name": "com.android.uberclone",
+            "certificate_hash": "fa6d507e3561f397ddbfac5ec15573f858ac6e8e"
           }
         },
         {
-          "client_id": "608156548434-rt7rb11t1pavsin31botg9ac06hv44co.apps.googleusercontent.com",
+          "client_id": "92448507536-jscmscfkcfv3gtcrpf1lmsocsqsauja8.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyA4wOP5MyzZqb6PQpww3eOBJVnV-FFAdIw"
+          "current_key": "AIzaSyBWwMWk1TGy8o6gPgtvU_Dxzc4R8YjnErc"
         }
       ],
       "services": {
@@ -40,7 +40,7 @@
           "status": 2,
           "other_platform_oauth_client": [
             {
-              "client_id": "608156548434-rt7rb11t1pavsin31botg9ac06hv44co.apps.googleusercontent.com",
+              "client_id": "92448507536-jscmscfkcfv3gtcrpf1lmsocsqsauja8.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
