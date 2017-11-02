@@ -1,4 +1,4 @@
-package com.android.uberclone;
+package com.example.pak_pc.sampleuber;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("com.android.uberclone", appContext.getPackageName());
+        assertEquals("com.example.pak_pc.sampleuber", appContext.getPackageName());
     }
 }

@@ -1,4 +1,4 @@
-package com.android.uberclone;
+package com.example.pak_pc.sampleuber;
 
 import org.junit.Test;
 
