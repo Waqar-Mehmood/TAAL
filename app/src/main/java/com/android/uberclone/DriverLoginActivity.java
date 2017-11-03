@@ -30,7 +30,7 @@ public class DriverLoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_customer_login);
+//        setContentView(R.layout.activity_rider_login);
 
         mEmail = findViewById(R.id.email);
         mPassword = findViewById(R.id.password);
@@ -50,9 +50,7 @@ public class DriverLoginActivity extends AppCompatActivity {
 
                     String user_id = user.getUid();
 
-                    Toast.makeText(DriverLoginActivity.this, "Successfully Login", Toast.LENGTH_SHORT).show();
-
-                    Intent intent = new Intent(DriverLoginActivity.this, MapActivity.class);
+                    Intent intent = new Intent(DriverLoginActivity.this, DriverMapActivity.class);
                     startActivity(intent);
 
                     mDatabaseReference.child("Users").child("Drivers").child(user_id).setValue(true);

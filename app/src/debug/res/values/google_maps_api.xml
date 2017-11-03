@@ -4,15 +4,15 @@
 
     To get one, follow this link, follow the directions and press "Create" at the end:
 
-    https://console.developers.google.com/flows/enableapi?apiid=maps_android_backend&keyType=CLIENT_SIDE_ANDROID&r=94:BF:4B:04:87:76:95:6D:D4:69:DE:8F:B4:89:D9:73:76:80:C3:A5%3Bcom.example.pak_pc.sampleuber
+    https://console.developers.google.com/flows/enableapi?apiid=maps_android_backend&keyType=CLIENT_SIDE_ANDROID&r=FA:6D:50:7E:35:61:F3:97:DD:BF:AC:5E:C1:55:73:F8:58:AC:6E:8E%3Bcom.android.uberclone
 
     You can also add your credentials to an existing key, using these values:
 
     Package name:
-    94:BF:4B:04:87:76:95:6D:D4:69:DE:8F:B4:89:D9:73:76:80:C3:A5
+    FA:6D:50:7E:35:61:F3:97:DD:BF:AC:5E:C1:55:73:F8:58:AC:6E:8E
 
     SHA-1 certificate fingerprint:
-    94:BF:4B:04:87:76:95:6D:D4:69:DE:8F:B4:89:D9:73:76:80:C3:A5
+    FA:6D:50:7E:35:61:F3:97:DD:BF:AC:5E:C1:55:73:F8:58:AC:6E:8E
 
     Alternatively, follow the directions here:
     https://developers.google.com/maps/documentation/android/start#get-key

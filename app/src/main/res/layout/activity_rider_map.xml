@@ -3,7 +3,7 @@
     android:layout_height="match_parent">
 
     <fragment
-        android:id="@+id/customer_map"
+        android:id="@+id/rider_map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
@@ -15,10 +15,10 @@
         android:text="Logout" />
 
     <Button
-        android:layout_gravity="right"
         android:id="@+id/settings"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="right"
         android:text="settings" />
 
     <Button

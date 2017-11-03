@@ -31,8 +31,9 @@ public class MainActivity extends AppCompatActivity {
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
                 FirebaseUser user = firebaseAuth.getCurrentUser();
                 if (user != null) {
-                    Intent intent = new Intent(MainActivity.this, MapActivity.class);
-                    startActivity(intent);
+//                    Intent intent = new Intent(MainActivity.this, DriverMapActivity.class);
+//                    startActivity(intent);
+                    LoadMainUI();
                 } else {
                     LoadMainUI();
                 }
@@ -56,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
         mCustomer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, CustomerLoginActivity.class);
+                Intent intent = new Intent(MainActivity.this, RiderLoginActivity.class);
                 startActivity(intent);
             }
         });

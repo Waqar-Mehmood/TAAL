@@ -16,7 +16,7 @@ import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.Arrays;
 
-public class CustomerLoginActivity extends AppCompatActivity {
+public class RiderLoginActivity extends AppCompatActivity {
 
     private EditText mEmail, mPassword;
     private Button mLogin, mRegister;
@@ -50,12 +50,10 @@ public class CustomerLoginActivity extends AppCompatActivity {
 
                     String user_id = user.getUid();
 
-                    Toast.makeText(CustomerLoginActivity.this, "Successfully Login", Toast.LENGTH_SHORT).show();
-
-                    Intent intent = new Intent(CustomerLoginActivity.this, MapActivity.class);
+                    Intent intent = new Intent(RiderLoginActivity.this, RiderMapActivity.class);
                     startActivity(intent);
 
-                    mDatabaseReference.child("Users").child("Rider").child(user_id).setValue(true);
+                    mDatabaseReference.child("Users").child("Riders").child(user_id).setValue(true);
 
                 } else {
                     startActivityForResult(
@@ -95,9 +93,9 @@ public class CustomerLoginActivity extends AppCompatActivity {
             // if login requset is successful show a toast,
             // otherwise tell user that the request failed and exit.
             if (resultCode == RESULT_OK) {
-                Toast.makeText(CustomerLoginActivity.this, "Signed in successfully!!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(RiderLoginActivity.this, "Signed in successfully!!", Toast.LENGTH_SHORT).show();
             } else if (resultCode == RESULT_CANCELED) {
-                Toast.makeText(CustomerLoginActivity.this, "Sign in cancelled", Toast.LENGTH_SHORT).show();
+                Toast.makeText(RiderLoginActivity.this, "Sign in cancelled", Toast.LENGTH_SHORT).show();
                 finish();
             }
         }
