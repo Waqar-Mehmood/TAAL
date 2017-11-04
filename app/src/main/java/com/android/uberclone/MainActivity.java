@@ -31,8 +31,8 @@ public class MainActivity extends AppCompatActivity {
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
                 FirebaseUser user = firebaseAuth.getCurrentUser();
                 if (user != null) {
-//                    Intent intent = new Intent(MainActivity.this, DriverMapActivity.class);
-//                    startActivity(intent);
+
+                    // for testing purpose
                     LoadMainUI();
 
 
