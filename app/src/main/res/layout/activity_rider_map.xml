@@ -32,18 +32,17 @@
             android:id="@+id/call_uber"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="9"
+            android:layout_weight="10"
             android:text="Call Uber" />
 
-        <ImageView
-            android:id="@+id/cancel_uber"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:src="@drawable/cancel_button" />
+        <!--<ImageView-->
+            <!--android:id="@+id/cancel_uber"-->
+            <!--android:layout_width="0dp"-->
+            <!--android:layout_height="match_parent"-->
+            <!--android:layout_weight="1"-->
+            <!--android:src="@drawable/cancel_button" />-->
 
     </LinearLayout>
-
 
 </FrameLayout>
 
