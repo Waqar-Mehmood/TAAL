@@ -34,6 +34,8 @@ public class MainActivity extends AppCompatActivity {
 //                    Intent intent = new Intent(MainActivity.this, DriverMapActivity.class);
 //                    startActivity(intent);
                     LoadMainUI();
+
+
                 } else {
                     LoadMainUI();
                 }

@@ -21,12 +21,29 @@
         android:layout_gravity="right"
         android:text="settings" />
 
-    <Button
-        android:id="@+id/call_uber"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:text="Call Uber" />
+        android:orientation="horizontal"
+        android:weightSum="10">
+
+        <Button
+            android:id="@+id/call_uber"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="9"
+            android:text="Call Uber" />
+
+        <ImageView
+            android:id="@+id/cancel_uber"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:src="@drawable/cancel_button" />
+
+    </LinearLayout>
+
 
 </FrameLayout>
 
