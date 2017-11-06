@@ -25,6 +25,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -51,10 +52,15 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
 
     private LatLng mPickupLocation;
     private Marker mDriverMarker;
+    private Marker mPickupMarker;
+    private GeoQuery mGeoQuery;
+    private DatabaseReference mDriverLocationReference;
+    private ValueEventListener mDriverLocationReferenceListener;
 
-    private int radius = 1;
-    private boolean driverFound = false;
-    private String driverFoundID;
+    private int mRadius = 1;
+    private boolean mDriverFound = false;
+    private boolean mRequestBol = false;
+    private String mDriverFoundID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,68 +91,128 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         mCallUber.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Getting user_id
-                String userId = FirebaseAuth.getInstance().getUid();
-
-                // get reference of RiderRequest node
-                DatabaseReference reference = FirebaseDatabase.getInstance().getReference("RidersRequest");
-
-                // adding user current location
-                GeoFire geoFire = new GeoFire(reference);
-                geoFire.setLocation(userId, new GeoLocation(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
-
-                // marker is added from here
-                mPickupLocation = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                mMap.addMarker(new MarkerOptions().position(mPickupLocation).title("Pick Here"));
-                mCallUber.setText("Getting your Drive");
-
-                getClosestDriver();
+                callUber();
             }
         });
 
         // Cancel Uber request and remove user location from RiderRequest node
-//        mCancelUber.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                String userId = FirebaseAuth.getInstance().getUid();
-//
-//                DatabaseReference reference = FirebaseDatabase.getInstance().getReference("RiderRequest");
-//
-//                GeoFire geoFire = new GeoFire(reference);
-//                geoFire.removeLocation(userId);
-//            }
-//        });
+        mCancelUber = findViewById(R.id.cancel_uber);
+        mCancelUber.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                cancelUberRequest();
+            }
+        });
+    }
+
+    private void callUber() {
+        if (mRequestBol == false) {
+            mRequestBol = true;
+
+            // Getting user id
+            String userId = FirebaseAuth.getInstance().getUid();
+
+            // get reference of RiderRequest node
+            DatabaseReference reference = FirebaseDatabase.getInstance().getReference("RidersRequest");
+
+            // adding rider's current location to database under RidersRequest node
+            GeoFire geoFire = new GeoFire(reference);
+            geoFire.setLocation(userId, new GeoLocation(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
+
+            // marker is added to rider's map
+            mPickupLocation = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+            mPickupMarker = mMap.addMarker(new MarkerOptions().position(mPickupLocation).title("Pick Here"));
+
+            mCallUber.setText("Getting your Drive");
+
+            // get nearest driver on rider's request
+            getClosestDriver();
+        }
+    }
+
+    private void cancelUberRequest() {
+        if (mRequestBol) {
+            mRequestBol = false;
+
+            // remove GeoQuery listener
+            if (mGeoQuery != null) {
+                mGeoQuery.removeAllListeners();
+            }
+
+            // remove mDriverLocationReference listener
+            if (mDriverLocationReference != null) {
+                mDriverLocationReference.removeEventListener(mDriverLocationReferenceListener);
+            }
+
+            if (mDriverFoundID != null) {
+                // get mDriverLocationReference of driver found form Drivers
+                DatabaseReference reference = FirebaseDatabase.getInstance().getReference()
+                        .child("Users").child("Drivers").child(mDriverFoundID);
+
+                // remove the assigned rider from driver
+                reference.setValue(true);
+                mDriverFoundID = null;
+            }
+
+            // reset values to default
+            mDriverFound = false;
+            mRadius = 1;
+
+            // get user id
+            String userId = FirebaseAuth.getInstance().getUid();
+
+            DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("RiderRequest");
+
+            // remove location of rider form RiderRequest node
+            GeoFire geoFire = new GeoFire(reference);
+            geoFire.removeLocation(userId);
+
+            // remove rider pickup marker on riders's map
+            if (mPickupMarker != null) {
+                mPickupMarker.remove();
+            }
+
+            // remove assigned driver marker from rider's map
+            if (mDriverMarker != null) {
+                mDriverMarker.remove();
+            }
+
+            mCallUber.setText("Call Uber");
+        }
     }
 
     private void getClosestDriver() {
-        // get reference of DriversAvailable node
+        // get mDriverLocationReference of DriversAvailable node
         DatabaseReference reference = FirebaseDatabase.getInstance().getReference("DriversAvailable");
 
-        // put reference to GeoFire
+        // put mDriverLocationReference to GeoFire
         GeoFire geoFire = new GeoFire(reference);
 
+        // check the nearest drive with given mRadius
+        mGeoQuery = geoFire.queryAtLocation(new GeoLocation(mPickupLocation.latitude,
+                mPickupLocation.longitude), mRadius);
 
-        GeoQuery geoQuery = geoFire.queryAtLocation(new GeoLocation(mPickupLocation.latitude,
-                mPickupLocation.longitude), radius);
-
-        geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
+        mGeoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
             @Override
             public void onKeyEntered(String key, GeoLocation location) {
-                if (!driverFound) {
-                    driverFound = true;
-                    driverFoundID = key;
+                if (!mDriverFound && mRequestBol) {
+                    mDriverFound = true;
+                    mDriverFoundID = key;
 
-                    // get reference of driver found form Drivers
+                    // get mDriverLocationReference of driver found form Drivers
                     DatabaseReference reference = FirebaseDatabase.getInstance().getReference()
-                            .child("Users").child("Drivers").child(driverFoundID);
+                            .child("Users").child("Drivers").child(mDriverFoundID);
+
                     // get user id
                     String riderId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                    // add the user id under the nearest found driver
                     HashMap map = new HashMap();
                     map.put("RiderId", riderId);
                     reference.updateChildren(map);
 
                     mCallUber.setText("Looking for driver location...");
 
+                    // get exact location of driver
                     getDriverLocation();
                 }
             }
@@ -163,12 +229,11 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
 
             @Override
             public void onGeoQueryReady() {
-//                if (!driverFound) {
-//                    if (radius < 100) {
-//                        radius++;
-//                        getClosestDriver();
-//                    }
-//                }
+                // if the driver on found on given mRadius then increase the mRadius and check again
+                if (!mDriverFound) {
+                    mRadius++;
+                    getClosestDriver();
+                }
             }
 
             @Override
@@ -178,46 +243,63 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         });
     }
 
+    // get exact location of driver
     private void getDriverLocation() {
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference()
-                .child("DriversWorking").child(driverFoundID).child("l");
 
-        reference.addValueEventListener(new ValueEventListener() {
+        mDriverLocationReference = FirebaseDatabase.getInstance().getReference().child("DriversWorking")
+                .child(mDriverFoundID).child("l");
+
+        mDriverLocationReferenceListener = mDriverLocationReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
+                if (dataSnapshot.exists() && mRequestBol) {
                     List<Object> map = (List<Object>) dataSnapshot.getValue();
                     double locationLat = 0;
                     double locationLng = 0;
 
                     mCallUber.setText("Driver Found");
 
+                    // get assigned driver latitude
                     if (map.get(0) != null) {
                         locationLat = Double.parseDouble(map.get(0).toString());
                     }
+                    // get assigned driver longitude
                     if (map.get(1) != null) {
                         locationLng = Double.parseDouble(map.get(1).toString());
                     }
 
+                    // store the latitude and longitude in driverLatLng
                     LatLng driverLatLng = new LatLng(locationLat, locationLng);
 
+                    // remove the driver marker from rider's map
                     if (mDriverMarker != null) {
                         mDriverMarker.remove();
                     }
 
+                    // location of rider
                     Location location1 = new Location("");
                     location1.setLatitude(mPickupLocation.latitude);
                     location1.setLongitude(mPickupLocation.longitude);
 
+                    // location of driver
                     Location location2 = new Location("");
                     location2.setLatitude(driverLatLng.latitude);
                     location2.setLongitude(driverLatLng.longitude);
 
+                    // calculate distance from rider to driver
                     float distance = location1.distanceTo(location2);
 
-                    mCallUber.setText("Driver Found" + String.valueOf(distance));
+                    // if distance less than 100 meters, it notify the rider that driver arrived
+                    if (distance < 100) {
+                        mCallUber.setText("Driver Arrived");
+                    } else {
+                        // otherwise it shows the distance on map
+                        mCallUber.setText("Driver Found" + String.valueOf(distance));
+                    }
 
-                    mDriverMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("your driver"));
+                    // add a marker of assigned driver on rider's map
+                    mDriverMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("your driver")
+                            .icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_car)));
                 }
             }
 
@@ -263,6 +345,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
+        // set location request parameter's of rider
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(1000);
         mLocationRequest.setFastestInterval(1000);
@@ -289,6 +372,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
     public void onLocationChanged(Location location) {
         mLastLocation = location;
 
+        // update location of rider on location changed
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
         mMap.animateCamera(CameraUpdateFactory.zoomTo(11));

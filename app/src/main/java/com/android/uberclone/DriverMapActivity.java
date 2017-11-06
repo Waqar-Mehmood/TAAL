@@ -23,6 +23,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -41,18 +42,20 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
     private LocationRequest mLocationRequest;
+    private Marker mPickupMarker;
+
+    private DatabaseReference mAssignedRiderPickupLocationReference;
+    private ValueEventListener mAssignedRiderPickupLocationReferenceListener;
+
     private Button mLogout;
 
-    private static boolean mCheckLoginStatus;
-
+    private static boolean mCheckLoginStatus = false;
     private String mRiderId = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver_maps);
-
-        mCheckLoginStatus = true;
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -64,43 +67,65 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         mLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mCheckLoginStatus = true;
+
+                // Signout the driver
                 signingOutDriver();
+                finish();
+                return;
             }
         });
 
+        // get assigned rider information
         getAssignedRider();
     }
 
+    // Signout the driver
     public void signingOutDriver() {
+
+        // disconnect driver from app
+        disconnectDriver();
+
+        // signing out driver
+        FirebaseAuth.getInstance().signOut();
+
+        // move to main activity
         Intent intent = new Intent(DriverMapActivity.this, MainActivity.class);
         startActivity(intent);
-
-        String userId = FirebaseAuth.getInstance().getUid();
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("DriversAvailable");
-
-        GeoFire geoFire = new GeoFire(reference);
-        geoFire.removeLocation(userId);
-
-        mCheckLoginStatus = false;
-
-        FirebaseAuth.getInstance().signOut();
     }
 
+    // get assigned rider information
     private void getAssignedRider() {
-        // get driver_id
+        // get driver id
         String driverId = FirebaseAuth.getInstance().getUid();
 
-        // get reference of driver_id
+        // get reference of assigned Rider Id
         DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("Users")
                 .child("Drivers").child(driverId).child("RiderId");
 
         reference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
+                // check if rider assigned to any driver
+                // if exist
                 if (dataSnapshot.exists()) {
-
+                    // get assigned rider id
                     mRiderId = dataSnapshot.getValue().toString();
+                    // get assigned rider pickup location
                     getAssignedRiderPickupLocation();
+                } else {
+                    // if not exist reset rider id
+                    mRiderId = "";
+
+                    // remove assigned rider marker on driver's map
+                    if (mPickupMarker != null) {
+                        mPickupMarker.remove();
+                    }
+
+                    // remove assign rider pickup location listener
+                    if (mAssignedRiderPickupLocationReference != null) {
+                        mAssignedRiderPickupLocationReference.removeEventListener(mAssignedRiderPickupLocationReferenceListener);
+                    }
                 }
             }
 
@@ -111,38 +136,45 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         });
     }
 
+    // get assigned rider pickup location
     private void getAssignedRiderPickupLocation() {
 
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("RidersRequest")
+        mAssignedRiderPickupLocationReference = FirebaseDatabase.getInstance().getReference().child("RidersRequest")
                 .child(mRiderId).child("l");
+        // add value event listener on rider request location
+        mAssignedRiderPickupLocationReferenceListener = mAssignedRiderPickupLocationReference
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        if (dataSnapshot.exists() && !mRiderId.equals("")) {
+                            List<Object> map = (List<Object>) dataSnapshot.getValue();
 
-        reference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    List<Object> map = (List<Object>) dataSnapshot.getValue();
+                            double locationLat = 0;
+                            double locationLng = 0;
 
-                    double locationLat = 0;
-                    double locationLng = 0;
+                            // get assigned rider latitude
+                            if (map.get(0) != null) {
+                                locationLat = Double.parseDouble(map.get(0).toString());
+                            }
+                            // get assigned rider longitude
+                            if (map.get(1) != null) {
+                                locationLng = Double.parseDouble(map.get(1).toString());
+                            }
 
-                    if (map.get(0) != null) {
-                        locationLat = Double.parseDouble(map.get(0).toString());
+                            // store the latitude and longitude in riderLatLng
+                            LatLng riderLatLng = new LatLng(locationLat, locationLng);
+
+                            // add marker of assigned rider on driver's map
+                            mPickupMarker = mMap.addMarker(new MarkerOptions().position(riderLatLng)
+                                    .title("Pickup location"));
+                        }
                     }
-                    if (map.get(1) != null) {
-                        locationLng = Double.parseDouble(map.get(1).toString());
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
                     }
-
-                    LatLng driverLatLng = new LatLng(locationLat, locationLng);
-
-                    mMap.addMarker(new MarkerOptions().position(driverLatLng).title("Pickup location"));
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
+                });
     }
 
     /**
@@ -180,6 +212,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
+        // set location request parameter's of driver
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(1000);
         mLocationRequest.setFastestInterval(1000);
@@ -208,29 +241,30 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
             mLastLocation = location;
 
+            // update location of driver on location changed
             LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-
             mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
             mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
 
-            if (mCheckLoginStatus) {
-                String userId = FirebaseAuth.getInstance().getUid();
-                DatabaseReference refAvailable = FirebaseDatabase.getInstance().getReference("DriversAvailable");
-                DatabaseReference refWorking = FirebaseDatabase.getInstance().getReference("DriversWorking");
+            String userId = FirebaseAuth.getInstance().getUid();
+            DatabaseReference refAvailable = FirebaseDatabase.getInstance().getReference("DriversAvailable");
+            DatabaseReference refWorking = FirebaseDatabase.getInstance().getReference("DriversWorking");
 
-                GeoFire geoFireAvailable = new GeoFire(refAvailable);
-                GeoFire geoFireWorking = new GeoFire(refWorking);
+            GeoFire geoFireAvailable = new GeoFire(refAvailable);
+            GeoFire geoFireWorking = new GeoFire(refWorking);
 
-                switch (mRiderId) {
-                    case "":
-                        geoFireWorking.removeLocation(userId);
-                        geoFireAvailable.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
-                        break;
-                    default:
-                        geoFireAvailable.removeLocation(userId);
-                        geoFireWorking.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
-                        break;
-                }
+            // change the driver status w.r.t assigned rider (available to working) or (working to available)
+            switch (mRiderId) {
+                // if the driver has no assigned rider then its status is Available
+                case "":
+                    geoFireWorking.removeLocation(userId);
+                    geoFireAvailable.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
+                    break;
+                // otherwise Working
+                default:
+                    geoFireAvailable.removeLocation(userId);
+                    geoFireWorking.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
+                    break;
             }
         }
     }
@@ -241,5 +275,25 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
         Intent intent = new Intent(DriverMapActivity.this, MainActivity.class);
         startActivity(intent);
+    }
+
+    // disconnect the driver
+    public void disconnectDriver() {
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+
+        String userId = FirebaseAuth.getInstance().getUid();
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("DriversAvailable");
+
+        GeoFire geoFire = new GeoFire(reference);
+        geoFire.removeLocation(userId);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        if (!mCheckLoginStatus) {
+            disconnectDriver();
+        }
     }
 }
