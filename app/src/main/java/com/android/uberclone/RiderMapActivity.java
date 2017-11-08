@@ -19,8 +19,12 @@ import com.firebase.geofire.GeoQuery;
 import com.firebase.geofire.GeoQueryEventListener;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
+import com.google.android.gms.location.places.ui.PlaceSelectionListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -47,10 +51,10 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
     private LocationRequest mLocationRequest;
-    private Button mLogout, mCallUber;
-    private ImageView mCancelUber;
+    private Button mCallUber;
 
     private LatLng mPickupLocation;
+    private LatLng mDestinationLatLng;
     private Marker mDriverMarker;
     private Marker mPickupMarker;
     private GeoQuery mGeoQuery;
@@ -61,6 +65,8 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
     private boolean mDriverFound = false;
     private boolean mRequestBol = false;
     private String mDriverFoundID;
+
+    private String mDestination;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +79,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         mapFragment.getMapAsync(this);
 
         // rider logout button
-        mLogout = (Button) findViewById(R.id.logout);
+        Button mLogout = findViewById(R.id.logout);
         mLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -86,8 +92,17 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
             }
         });
 
+        Button mSettings = findViewById(R.id.settings);
+        mSettings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(RiderMapActivity.this, RiderSettingActivity.class);
+                startActivity(intent);
+            }
+        });
+
         // Request Uber and set user location to RiderRequest node under user_id
-        mCallUber = (Button) findViewById(R.id.call_uber);
+        mCallUber = findViewById(R.id.call_uber);
         mCallUber.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -96,11 +111,27 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         });
 
         // Cancel Uber request and remove user location from RiderRequest node
-        mCancelUber = findViewById(R.id.cancel_uber);
+        ImageView mCancelUber = findViewById(R.id.cancel_uber);
         mCancelUber.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 cancelUberRequest();
+            }
+        });
+
+        PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
+        getFragmentManager().findFragmentById(R.id.place_autocomplete_fragment);
+
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+                // TODO: Get info about the selected place.
+                mDestination = place.getName().toString();
+                mDestinationLatLng = place.getLatLng();
+            }
+            @Override
+            public void onError(Status status) {
+                // TODO: Handle the error.
             }
         });
     }
@@ -113,7 +144,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
             String userId = FirebaseAuth.getInstance().getUid();
 
             // get reference of RiderRequest node
-            DatabaseReference reference = FirebaseDatabase.getInstance().getReference("RidersRequest");
+            DatabaseReference reference = FirebaseDatabase.getInstance().getReference(FirebaseConstants.RIDERS_REQUEST);
 
             // adding rider's current location to database under RidersRequest node
             GeoFire geoFire = new GeoFire(reference);
@@ -147,7 +178,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
             if (mDriverFoundID != null) {
                 // get mDriverLocationReference of driver found form Drivers
                 DatabaseReference reference = FirebaseDatabase.getInstance().getReference()
-                        .child("Users").child("Drivers").child(mDriverFoundID);
+                        .child(FirebaseConstants.USERS).child(FirebaseConstants.DRIVERS).child(mDriverFoundID);
 
                 // remove the assigned rider from driver
                 reference.setValue(true);
@@ -161,7 +192,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
             // get user id
             String userId = FirebaseAuth.getInstance().getUid();
 
-            DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("RiderRequest");
+            DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child(FirebaseConstants.RIDERS_REQUEST);
 
             // remove location of rider form RiderRequest node
             GeoFire geoFire = new GeoFire(reference);
@@ -183,7 +214,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
 
     private void getClosestDriver() {
         // get mDriverLocationReference of DriversAvailable node
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("DriversAvailable");
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference(FirebaseConstants.DRIVERS_AVAILABLE);
 
         // put mDriverLocationReference to GeoFire
         GeoFire geoFire = new GeoFire(reference);
@@ -191,6 +222,8 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         // check the nearest drive with given mRadius
         mGeoQuery = geoFire.queryAtLocation(new GeoLocation(mPickupLocation.latitude,
                 mPickupLocation.longitude), mRadius);
+
+//        mGeoQuery.removeAllListeners();
 
         mGeoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
             @Override
@@ -201,13 +234,15 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
 
                     // get mDriverLocationReference of driver found form Drivers
                     DatabaseReference reference = FirebaseDatabase.getInstance().getReference()
-                            .child("Users").child("Drivers").child(mDriverFoundID);
+                            .child(FirebaseConstants.USERS).child(FirebaseConstants.DRIVERS).child(mDriverFoundID)
+                            .child(FirebaseConstants.RIDERS_REQUEST);
 
                     // get user id
                     String riderId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                     // add the user id under the nearest found driver
                     HashMap map = new HashMap();
-                    map.put("RiderId", riderId);
+                    map.put(FirebaseConstants.RIDER_ID, riderId);
+                    map.put(FirebaseConstants.DESTINATION, mDestination);
                     reference.updateChildren(map);
 
                     mCallUber.setText("Looking for driver location...");
@@ -246,7 +281,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
     // get exact location of driver
     private void getDriverLocation() {
 
-        mDriverLocationReference = FirebaseDatabase.getInstance().getReference().child("DriversWorking")
+        mDriverLocationReference = FirebaseDatabase.getInstance().getReference().child(FirebaseConstants.DRIVERS_WORKING)
                 .child(mDriverFoundID).child("l");
 
         mDriverLocationReferenceListener = mDriverLocationReference.addValueEventListener(new ValueEventListener() {

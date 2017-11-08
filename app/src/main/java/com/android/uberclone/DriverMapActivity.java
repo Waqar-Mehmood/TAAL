@@ -11,6 +11,9 @@ import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
@@ -31,8 +34,10 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.squareup.picasso.Picasso;
 
 import java.util.List;
+import java.util.Map;
 
 public class DriverMapActivity extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
@@ -47,15 +52,24 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     private DatabaseReference mAssignedRiderPickupLocationReference;
     private ValueEventListener mAssignedRiderPickupLocationReferenceListener;
 
-    private Button mLogout;
-
     private static boolean mCheckLoginStatus = false;
     private String mRiderId = "";
+
+    private LinearLayout mRiderInfo;
+    private TextView rider_name;
+    private TextView rider_phone_number;
+    private ImageView rider_profile_pic;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver_maps);
+
+        rider_name = findViewById(R.id.rider_name);
+        rider_phone_number = findViewById(R.id.rider_phone_number);
+        rider_profile_pic = findViewById(R.id.rider_profile_pic);
+        mRiderInfo = findViewById(R.id.rider_info);
+
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -63,7 +77,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         mapFragment.getMapAsync(this);
 
         // driver logout button
-        mLogout = (Button) findViewById(R.id.logout);
+        Button mLogout = findViewById(R.id.driver_logout);
         mLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -73,6 +87,15 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 signingOutDriver();
                 finish();
                 return;
+            }
+        });
+
+        Button settings = findViewById(R.id.driver_settings);
+        settings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(DriverMapActivity.this, DriverSettingActivity.class);
+                startActivity(intent);
             }
         });
 
@@ -100,8 +123,9 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         String driverId = FirebaseAuth.getInstance().getUid();
 
         // get reference of assigned Rider Id
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("Users")
-                .child("Drivers").child(driverId).child("RiderId");
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child(FirebaseConstants.USERS)
+                .child(FirebaseConstants.DRIVERS).child(driverId).child(FirebaseConstants.RIDERS_REQUEST)
+                .child(FirebaseConstants.RIDER_ID);
 
         reference.addValueEventListener(new ValueEventListener() {
             @Override
@@ -113,6 +137,12 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                     mRiderId = dataSnapshot.getValue().toString();
                     // get assigned rider pickup location
                     getAssignedRiderPickupLocation();
+                    // get assigned rider info
+                    getAssignedRiderInfo();
+                    // get assigned rider destination
+                    getAssignedRiderDestination();
+
+
                 } else {
                     // if not exist reset rider id
                     mRiderId = "";
@@ -126,6 +156,8 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                     if (mAssignedRiderPickupLocationReference != null) {
                         mAssignedRiderPickupLocationReference.removeEventListener(mAssignedRiderPickupLocationReferenceListener);
                     }
+
+                    mRiderInfo.setVisibility(View.GONE);
                 }
             }
 
@@ -139,8 +171,8 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     // get assigned rider pickup location
     private void getAssignedRiderPickupLocation() {
 
-        mAssignedRiderPickupLocationReference = FirebaseDatabase.getInstance().getReference().child("RidersRequest")
-                .child(mRiderId).child("l");
+        mAssignedRiderPickupLocationReference = FirebaseDatabase.getInstance().getReference().child(FirebaseConstants.RIDERS_REQUEST)
+                .child(mRiderId).child(FirebaseConstants.LOCATION);
         // add value event listener on rider request location
         mAssignedRiderPickupLocationReferenceListener = mAssignedRiderPickupLocationReference
                 .addValueEventListener(new ValueEventListener() {
@@ -175,6 +207,78 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
                     }
                 });
+    }
+
+    // get assigned rider info
+    private void getAssignedRiderInfo() {
+
+        mRiderInfo.setVisibility(View.VISIBLE);
+
+        String user_id = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference()
+                .child(FirebaseConstants.USERS).child(FirebaseConstants.RIDERS).child(user_id);
+
+        databaseReference.child(FirebaseConstants.USERS).child(FirebaseConstants.RIDERS).child(user_id)
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        if (dataSnapshot.exists()) {
+                            Map<String, Object> map = (Map<String, Object>) dataSnapshot.getValue();
+
+                            if (map.get(FirebaseConstants.NAME) != null) {
+                                rider_name.setText(map.get(FirebaseConstants.NAME).toString());
+                            }
+
+                            if (map.get(FirebaseConstants.PHONE_NUMBER) != null) {
+                                rider_phone_number.setText(map.get(FirebaseConstants.PHONE_NUMBER).toString());
+                            }
+
+                            if (map.get(FirebaseConstants.PROFILE_IMAGE_URL) != null) {
+                                Picasso.with(getApplication())
+                                        .load(map.get(FirebaseConstants.PROFILE_IMAGE_URL).toString())
+                                        .placeholder(R.drawable.progress_animation)
+                                        .into(rider_profile_pic);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
+                    }
+                });
+
+    }
+
+    // get assigned rider information
+    private void getAssignedRiderDestination() {
+        // get driver id
+        String driverId = FirebaseAuth.getInstance().getUid();
+
+        // get reference of assigned Rider Id
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child(FirebaseConstants.USERS)
+                .child(FirebaseConstants.DRIVERS).child(driverId).child(FirebaseConstants.RIDERS_REQUEST)
+                .child(FirebaseConstants.RIDER_ID);
+
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+                if (dataSnapshot.exists()) {
+                    // get assigned rider id
+                    mRiderId = dataSnapshot.getValue().toString();
+
+                } else {
+
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
     }
 
     /**
@@ -246,9 +350,9 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
             mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
             mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
 
-            String userId = FirebaseAuth.getInstance().getUid();
-            DatabaseReference refAvailable = FirebaseDatabase.getInstance().getReference("DriversAvailable");
-            DatabaseReference refWorking = FirebaseDatabase.getInstance().getReference("DriversWorking");
+            String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            DatabaseReference refAvailable = FirebaseDatabase.getInstance().getReference(FirebaseConstants.DRIVERS_AVAILABLE);
+            DatabaseReference refWorking = FirebaseDatabase.getInstance().getReference(FirebaseConstants.DRIVERS_WORKING);
 
             GeoFire geoFireAvailable = new GeoFire(refAvailable);
             GeoFire geoFireWorking = new GeoFire(refWorking);
@@ -282,7 +386,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
 
         String userId = FirebaseAuth.getInstance().getUid();
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("DriversAvailable");
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference(FirebaseConstants.DRIVERS_AVAILABLE);
 
         GeoFire geoFire = new GeoFire(reference);
         geoFire.removeLocation(userId);
