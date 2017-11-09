@@ -43,7 +43,7 @@
             android:name=".DriverMapActivity"
             android:label="@string/title_activity_driver_maps" />
         <activity android:name=".RiderSettingActivity" />
-        <activity android:name=".DriverSettingActivity"></activity>
+        <activity android:name=".DriverSettingActivity" />
     </application>
 
 </manifest>

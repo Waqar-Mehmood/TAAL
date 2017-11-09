@@ -8,7 +8,7 @@ import android.widget.Button;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String UBER_CLONE = "UberClone";
+    private static final String UBER_CLONE = "uberclone";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,5 +32,12 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+
+        finishAffinity();
     }
 }

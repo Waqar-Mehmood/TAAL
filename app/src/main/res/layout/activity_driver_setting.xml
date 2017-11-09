@@ -18,7 +18,7 @@
             android:gravity="center">
 
             <ImageView
-                android:id="@+id/profile_image"
+                android:id="@+id/driver_profile_image"
                 android:layout_width="200dp"
                 android:layout_height="200dp"
                 android:background="#E0F2F1"
@@ -40,7 +40,7 @@
                 android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
 
             <EditText
-                android:id="@+id/contact_name"
+                android:id="@+id/driver_name"
                 android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:gravity="center"
@@ -59,7 +59,7 @@
                 android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
 
             <EditText
-                android:id="@+id/contact_number"
+                android:id="@+id/driver_number"
                 android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:gravity="center"
@@ -88,33 +88,35 @@
                 tools:text="Honda Civic" />
 
             <RadioGroup
-                android:id="@+id/radioGroup"
+                android:id="@+id/driver_radio_group"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
+                android:layout_marginBottom="10dp"
+                android:layout_marginTop="10dp"
+                android:gravity="center_horizontal"
                 android:orientation="horizontal">
 
                 <RadioButton
-                    android:id="@+id/UberX"
+                    android:id="@+id/driver_uber_x"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="UberX" />
 
                 <RadioButton
-                    android:id="@+id/UberBlack"
+                    android:id="@+id/driver_uber_black"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="UberBlack" />
 
                 <RadioButton
-                    android:id="@+id/UberXl"
+                    android:id="@+id/driver_uber_xl"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="UberXl" />
             </RadioGroup>
 
             <Button
-                android:id="@+id/save_info_done_button"
+                android:id="@+id/save_driver_info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Done" />

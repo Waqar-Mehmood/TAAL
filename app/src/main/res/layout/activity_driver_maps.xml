@@ -59,7 +59,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/rider_info"
+        android:id="@+id/d_rider_info"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
@@ -75,37 +75,38 @@
             android:orientation="horizontal">
 
             <ImageView
-                android:id="@+id/rider_profile_pic"
+                android:id="@+id/d_rider_profile_pic"
                 android:layout_width="100sp"
                 android:layout_height="100sp"
-                android:padding="20sp" />
+                android:padding="10sp"
+                tools:src="@drawable/unknown_profile_pic" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingLeft="40sp">
+                android:layout_marginLeft="20sp"
+                android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/customer_destination"
+                    android:id="@+id/d_rider_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingBottom="10sp"
+                    android:layout_marginBottom="10dp"
+                    android:layout_marginTop="10dp"
+                    tools:text="Name" />
+
+                <TextView
+                    android:id="@+id/d_rider_phone_number"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10sp"
+                    tools:text="Phone Number" />
+
+                <TextView
+                    android:id="@+id/d_rider_destination"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Destination: --" />
-
-                <TextView
-                    android:id="@+id/rider_name"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingBottom="10sp"
-                    android:paddingTop="20sp" />
-
-                <TextView
-                    android:id="@+id/rider_phone_number"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingBottom="10sp"
-                    android:paddingTop="20sp" />
             </LinearLayout>
         </LinearLayout>
 

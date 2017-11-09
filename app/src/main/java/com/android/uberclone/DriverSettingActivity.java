@@ -10,6 +10,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -30,35 +32,39 @@ public class DriverSettingActivity extends AppCompatActivity {
 
     private DatabaseReference mDatabaseReference;
 
-    private EditText mContactName;
-    private EditText mContactNumber;
+    private EditText mDriverName;
+    private EditText mDriverNumber;
     private EditText mDriverCar;
-    private ImageView mProfileImage;
-    private Button mSaveInfo;
+    private ImageView mDriverProfileImage;
+    private Button mDriverSaveInfo;
+    private RadioButton mRadioButton;
+    private RadioGroup mRadioGroup;
 
     private static final int RC_PHOTO_PICKER = 2;
-    private static final String TAG = "uber clone";
 
-    private String mUserID;
-    private Boolean mCheckOnce = true;
+    private String mDriverID;
+    private String mService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver_setting);
 
-        mContactName = findViewById(R.id.contact_name);
-        mContactNumber = findViewById(R.id.contact_number);
+        mDriverName = findViewById(R.id.driver_name);
+        mDriverNumber = findViewById(R.id.driver_number);
         mDriverCar = findViewById(R.id.driver_car);
-        mProfileImage = findViewById(R.id.profile_image);
-        mSaveInfo = findViewById(R.id.save_info_done_button);
+        mDriverProfileImage = findViewById(R.id.driver_profile_image);
+        mDriverSaveInfo = findViewById(R.id.save_driver_info);
 
-        mUserID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        mRadioGroup = findViewById(R.id.driver_radio_group);
+        mRadioGroup.check(R.id.driver_uber_x);
 
-        mDatabaseReference = FirebaseDatabase.getInstance().getReference().child(FirebaseConstants.USERS)
-                .child(FirebaseConstants.DRIVERS).child(mUserID).child(FirebaseConstants.USER_DETAILS);
+        mDriverID = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        mProfileImage.setOnClickListener(new View.OnClickListener() {
+        mDatabaseReference = FirebaseDatabase.getInstance().getReference().child(AppConstants.USERS)
+                .child(AppConstants.DRIVERS).child(mDriverID).child(AppConstants.USER_DETAILS);
+
+        mDriverProfileImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -68,7 +74,7 @@ public class DriverSettingActivity extends AppCompatActivity {
             }
         });
 
-        mContactName.addTextChangedListener(new TextWatcher() {
+        mDriverName.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
@@ -77,9 +83,9 @@ public class DriverSettingActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if (charSequence.toString().trim().length() > 0) {
-                    mSaveInfo.setEnabled(true);
+                    mDriverSaveInfo.setEnabled(true);
                 } else {
-                    mSaveInfo.setEnabled(false);
+                    mDriverSaveInfo.setEnabled(false);
                 }
             }
 
@@ -89,7 +95,7 @@ public class DriverSettingActivity extends AppCompatActivity {
             }
         });
 
-        mContactNumber.addTextChangedListener(new TextWatcher() {
+        mDriverNumber.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
@@ -98,9 +104,9 @@ public class DriverSettingActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if (charSequence.toString().trim().length() > 0) {
-                    mSaveInfo.setEnabled(true);
+                    mDriverSaveInfo.setEnabled(true);
                 } else {
-                    mSaveInfo.setEnabled(false);
+                    mDriverSaveInfo.setEnabled(false);
                 }
             }
 
@@ -119,9 +125,9 @@ public class DriverSettingActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if (charSequence.toString().trim().length() > 0) {
-                    mSaveInfo.setEnabled(true);
+                    mDriverSaveInfo.setEnabled(true);
                 } else {
-                    mSaveInfo.setEnabled(false);
+                    mDriverSaveInfo.setEnabled(false);
                 }
             }
 
@@ -131,73 +137,79 @@ public class DriverSettingActivity extends AppCompatActivity {
             }
         });
 
-
-        mSaveInfo.setOnClickListener(new View.OnClickListener() {
+        mDriverSaveInfo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (mContactName.getText().toString().trim().length() > 0) {
-                    Map userInfo = new HashMap();
 
-                    userInfo.put(FirebaseConstants.NAME, mContactName.getText().toString());
-
-                    mDatabaseReference.updateChildren(userInfo);
-                }
-
-                if (mContactNumber.getText().toString().trim().length() > 0) {
-                    Map userInfo = new HashMap();
-
-                    userInfo.put(FirebaseConstants.PHONE_NUMBER, mContactNumber.getText().toString());
-
-                    mDatabaseReference.updateChildren(userInfo);
-
-                }
-
-                if (mDriverCar.getText().toString().trim().length() > 0) {
-                    Map userInfo = new HashMap();
-
-                    userInfo.put(FirebaseConstants.DRIVER_CAR, mDriverCar.getText().toString());
-
-                    mDatabaseReference.updateChildren(userInfo);
-
-                }
+                // save user info to database
+                saveUserInfo();
 
                 Intent intent = new Intent(DriverSettingActivity.this, DriverMapActivity.class);
                 startActivity(intent);
             }
         });
 
+        // get driver info and populate settings activity
         getUserInfo();
-
     }
 
+    // save user info to database
+    private void saveUserInfo() {
+
+        mRadioButton = findViewById(mRadioGroup.getCheckedRadioButtonId());
+
+        Map userInfo = new HashMap();
+
+        // username, phone number, driver car
+        userInfo.put(AppConstants.NAME, mDriverName.getText().toString());
+        userInfo.put(AppConstants.PHONE_NUMBER, mDriverNumber.getText().toString());
+        userInfo.put(AppConstants.DRIVER_CAR, mDriverCar.getText().toString());
+        userInfo.put(AppConstants.SERVICE, mRadioButton.getText().toString());
+
+        mDatabaseReference.updateChildren(userInfo);
+    }
+
+    // get driver info and populate settings activity
     private void getUserInfo() {
 
         mDatabaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                if (mCheckOnce) {
-                    mCheckOnce = false;
-                    if (dataSnapshot.exists()) {
-                        Map<String, Object> map = (Map<String, Object>) dataSnapshot.getValue();
+                if (dataSnapshot.exists()) {
+                    Map<String, Object> map = (Map<String, Object>) dataSnapshot.getValue();
 
-                        if (map.get(FirebaseConstants.NAME) != null) {
-                            mContactName.setText(map.get(FirebaseConstants.NAME).toString().toUpperCase());
-                        }
+                    if (map.get(AppConstants.NAME) != null) {
+                        mDriverName.setText(map.get(AppConstants.NAME).toString().toUpperCase());
+                    }
 
-                        if (map.get(FirebaseConstants.PHONE_NUMBER) != null) {
-                            mContactNumber.setText(map.get(FirebaseConstants.PHONE_NUMBER).toString().toUpperCase());
-                        }
+                    if (map.get(AppConstants.PHONE_NUMBER) != null) {
+                        mDriverNumber.setText(map.get(AppConstants.PHONE_NUMBER).toString());
+                    }
 
-                        if (map.get(FirebaseConstants.DRIVER_CAR) != null) {
-                            mContactNumber.setText(map.get(FirebaseConstants.DRIVER_CAR).toString().toUpperCase());
-                        }
+                    if (map.get(AppConstants.DRIVER_CAR) != null) {
+                        mDriverCar.setText(map.get(AppConstants.DRIVER_CAR).toString().toUpperCase());
+                    }
 
-                        if (map.get(FirebaseConstants.PROFILE_IMAGE_URL) != null) {
-                            Picasso.with(getApplication())
-                                    .load(map.get(FirebaseConstants.PROFILE_IMAGE_URL).toString().toUpperCase())
-                                    .placeholder(R.drawable.progress_animation)
-                                    .into(mProfileImage);
+                    if (map.get(AppConstants.SERVICE) != null) {
+                        mService = map.get(AppConstants.SERVICE).toString();
+                        switch (mService) {
+                            case "UberX":
+                                mRadioGroup.check(R.id.driver_uber_x);
+                                break;
+                            case "UberBlack":
+                                mRadioGroup.check(R.id.driver_uber_black);
+                                break;
+                            case "UberXl":
+                                mRadioGroup.check(R.id.driver_uber_xl);
+                                break;
                         }
+                    }
+
+                    if (map.get(AppConstants.PROFILE_IMAGE_URL) != null) {
+                        Picasso.with(getApplication())
+                                .load(map.get(AppConstants.PROFILE_IMAGE_URL).toString())
+                                .placeholder(R.drawable.progress_animation)
+                                .into(mDriverProfileImage);
                     }
                 }
             }
@@ -222,9 +234,9 @@ public class DriverSettingActivity extends AppCompatActivity {
 
             // get a reference to store file at chat_photos/<FILENAME>
             StorageReference photoRef = FirebaseStorage.getInstance().getReference()
-                    .child(FirebaseConstants.PROFILE_IMAGES).child(FirebaseConstants.DRIVERS).child(mUserID);
+                    .child(AppConstants.PROFILE_IMAGES).child(AppConstants.DRIVERS).child(mDriverID);
 
-            mProfileImage.setImageURI(selectedImageUri);
+            mDriverProfileImage.setImageURI(selectedImageUri);
 
             photoRef.putFile(selectedImageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                 @Override
@@ -235,7 +247,7 @@ public class DriverSettingActivity extends AppCompatActivity {
                     Map userInfo = new HashMap();
 
                     if (imageUrl != null) {
-                        userInfo.put(FirebaseConstants.PROFILE_IMAGE_URL, imageUrl.toString());
+                        userInfo.put(AppConstants.PROFILE_IMAGE_URL, imageUrl.toString());
 
                         mDatabaseReference.updateChildren(userInfo);
                     }

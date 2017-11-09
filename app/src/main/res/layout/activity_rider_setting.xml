@@ -13,7 +13,7 @@
         android:gravity="center">
 
         <ImageView
-            android:id="@+id/profile_image"
+            android:id="@+id/rider_profile_image"
             android:layout_width="200dp"
             android:layout_height="200dp"
             android:background="#E0F2F1"
@@ -36,10 +36,11 @@
             android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
 
         <EditText
-            android:id="@+id/contact_name"
+            android:id="@+id/rider_name"
             android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:gravity="center"
+            android:inputType="text"
             android:maxLines="1"
             android:padding="16dp"
             android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
@@ -54,7 +55,7 @@
             android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
 
         <EditText
-            android:id="@+id/contact_number"
+            android:id="@+id/rider_number"
             android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:gravity="center"
@@ -65,7 +66,7 @@
             tools:text="0342-5297771" />
 
         <Button
-            android:id="@+id/save_info_done_button"
+            android:id="@+id/save_rider_info"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Done" />

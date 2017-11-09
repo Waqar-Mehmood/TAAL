@@ -8,8 +8,8 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -30,33 +30,31 @@ public class RiderSettingActivity extends AppCompatActivity {
 
     private DatabaseReference mDatabaseReference;
 
-    private TextView mContactName;
-    private TextView mContactNumber;
-    private ImageView mProfileImage;
-    private Button mSaveInfo;
+    private EditText mRiderName;
+    private EditText mRiderNumber;
+    private ImageView mRiderProfileImage;
+    private Button mRiderSaveInfo;
 
     private static final int RC_PHOTO_PICKER = 2;
-    private static final String TAG = "uber clone";
 
-    private String mUserID;
-    private Boolean mCheckOnce = true;
+    private String mRiderID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rider_setting);
 
-        mContactName = findViewById(R.id.contact_name);
-        mContactNumber = findViewById(R.id.contact_number);
-        mProfileImage = findViewById(R.id.profile_image);
-        mSaveInfo = findViewById(R.id.save_info_done_button);
+        mRiderName = findViewById(R.id.rider_name);
+        mRiderNumber = findViewById(R.id.rider_number);
+        mRiderProfileImage = findViewById(R.id.rider_profile_image);
+        mRiderSaveInfo = findViewById(R.id.save_rider_info);
 
-        mUserID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        mRiderID = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        mDatabaseReference = FirebaseDatabase.getInstance().getReference().child(FirebaseConstants.USERS)
-                .child(FirebaseConstants.RIDERS).child(mUserID).child(FirebaseConstants.USER_DETAILS);
+        mDatabaseReference = FirebaseDatabase.getInstance().getReference().child(AppConstants.USERS)
+                .child(AppConstants.RIDERS).child(mRiderID).child(AppConstants.USER_DETAILS);
 
-        mProfileImage.setOnClickListener(new View.OnClickListener() {
+        mRiderProfileImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -66,7 +64,7 @@ public class RiderSettingActivity extends AppCompatActivity {
             }
         });
 
-        mContactName.addTextChangedListener(new TextWatcher() {
+        mRiderName.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
@@ -74,10 +72,10 @@ public class RiderSettingActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                if (charSequence.toString().trim().length() > 0) {
-                    mSaveInfo.setEnabled(true);
+                if (charSequence.toString().length() > 0) {
+                    mRiderSaveInfo.setEnabled(true);
                 } else {
-                    mSaveInfo.setEnabled(false);
+                    mRiderSaveInfo.setEnabled(false);
                 }
             }
 
@@ -87,7 +85,7 @@ public class RiderSettingActivity extends AppCompatActivity {
             }
         });
 
-        mContactNumber.addTextChangedListener(new TextWatcher() {
+        mRiderNumber.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
@@ -95,10 +93,10 @@ public class RiderSettingActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                if (charSequence.toString().trim().length() > 0) {
-                    mSaveInfo.setEnabled(true);
+                if (charSequence.toString().length() > 0) {
+                    mRiderSaveInfo.setEnabled(true);
                 } else {
-                    mSaveInfo.setEnabled(false);
+                    mRiderSaveInfo.setEnabled(false);
                 }
             }
 
@@ -108,59 +106,58 @@ public class RiderSettingActivity extends AppCompatActivity {
             }
         });
 
-        mSaveInfo.setOnClickListener(new View.OnClickListener() {
+        mRiderSaveInfo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (mContactName.getText().toString().trim().length() > 0) {
-                    Map userInfo = new HashMap();
 
-                    userInfo.put(FirebaseConstants.NAME, mContactName.getText().toString());
-
-                    mDatabaseReference.updateChildren(userInfo);
-                }
-
-                if (mContactNumber.getText().toString().trim().length() > 0) {
-                    Map userInfo = new HashMap();
-
-                    userInfo.put(FirebaseConstants.PHONE_NUMBER, mContactNumber.getText().toString());
-
-                    mDatabaseReference.updateChildren(userInfo);
-
-                }
+                // save user info to database
+                saveUserInfo();
 
                 Intent intent = new Intent(RiderSettingActivity.this, RiderMapActivity.class);
                 startActivity(intent);
             }
         });
 
-        getUserInfo();
+        // get rider info and populate settings activity
+        getRiderInfo();
 
     }
 
-    private void getUserInfo() {
+    // save user info to database
+    private void saveUserInfo() {
+
+        // username, phone number
+        Map userInfo = new HashMap();
+
+        userInfo.put(AppConstants.NAME, mRiderName.getText().toString());
+        userInfo.put(AppConstants.PHONE_NUMBER, mRiderNumber.getText().toString());
+
+        mDatabaseReference.updateChildren(userInfo);
+    }
+
+    // get rider info and populate settings activity
+    private void getRiderInfo() {
 
         mDatabaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                if (mCheckOnce) {
-                    mCheckOnce = false;
-                    if (dataSnapshot.exists()) {
-                        Map<String, Object> map = (Map<String, Object>) dataSnapshot.getValue();
 
-                        if (map.get(FirebaseConstants.NAME) != null) {
-                            mContactName.setText(map.get(FirebaseConstants.NAME).toString().toUpperCase());
-                        }
+                if (dataSnapshot.exists()) {
+                    Map<String, Object> map = (Map<String, Object>) dataSnapshot.getValue();
 
-                        if (map.get(FirebaseConstants.PHONE_NUMBER) != null) {
-                            mContactNumber.setText(map.get(FirebaseConstants.PHONE_NUMBER).toString().toUpperCase());
-                        }
+                    if (map.get(AppConstants.NAME) != null) {
+                        mRiderName.setText(map.get(AppConstants.NAME).toString().toUpperCase());
+                    }
 
-                        if (map.get(FirebaseConstants.PROFILE_IMAGE_URL) != null) {
-                            Picasso.with(getApplication())
-                                    .load(map.get(FirebaseConstants.PROFILE_IMAGE_URL).toString().toUpperCase())
-                                    .placeholder(R.drawable.progress_animation)
-                                    .into(mProfileImage);
-                        }
+                    if (map.get(AppConstants.PHONE_NUMBER) != null) {
+                        mRiderNumber.setText(map.get(AppConstants.PHONE_NUMBER).toString());
+                    }
+
+                    if (map.get(AppConstants.PROFILE_IMAGE_URL) != null) {
+                        Picasso.with(getApplication())
+                                .load(map.get(AppConstants.PROFILE_IMAGE_URL).toString())
+                                .placeholder(R.drawable.progress_animation)
+                                .into(mRiderProfileImage);
                     }
                 }
             }
@@ -185,9 +182,9 @@ public class RiderSettingActivity extends AppCompatActivity {
 
             // get a reference to store file at chat_photos/<FILENAME>
             StorageReference photoRef = FirebaseStorage.getInstance().getReference()
-                    .child(FirebaseConstants.PROFILE_IMAGES).child(FirebaseConstants.RIDERS).child(mUserID);
+                    .child(AppConstants.PROFILE_IMAGES).child(AppConstants.RIDERS).child(mRiderID);
 
-            mProfileImage.setImageURI(selectedImageUri);
+            mRiderProfileImage.setImageURI(selectedImageUri);
 
             photoRef.putFile(selectedImageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                 @Override
@@ -198,7 +195,7 @@ public class RiderSettingActivity extends AppCompatActivity {
                     Map userInfo = new HashMap();
 
                     if (imageUrl != null) {
-                        userInfo.put(FirebaseConstants.PROFILE_IMAGE_URL, imageUrl.toString());
+                        userInfo.put(AppConstants.PROFILE_IMAGE_URL, imageUrl.toString());
 
                         mDatabaseReference.updateChildren(userInfo);
                     }

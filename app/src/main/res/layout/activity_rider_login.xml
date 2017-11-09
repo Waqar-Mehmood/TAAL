@@ -4,47 +4,5 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:orientation="vertical">
 
-        <EditText
-            android:id="@+id/phone_number"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:fontFamily="sans-serif"
-            android:hint="Phone Number"
-            android:inputType="phone"
-            android:paddingLeft="20dp"
-            android:paddingRight="20dp"
-            android:textSize="24sp" />
-
-        <Button
-            android:id="@+id/profile_image"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:fontFamily="sans-serif"
-            android:padding="20dp"
-            android:text="Select Profile Picture"
-            android:textSize="20sp" />
-
-        <Button
-            android:id="@+id/done_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginTop="30dp"
-            android:fontFamily="sans-serif"
-            android:paddingBottom="20dp"
-            android:paddingLeft="30dp"
-            android:paddingRight="30dp"
-            android:paddingTop="20dp"
-            android:text="Done"
-            android:textSize="20sp" />
-
-    </LinearLayout>
 </RelativeLayout>
