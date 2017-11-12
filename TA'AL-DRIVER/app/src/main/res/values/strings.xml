@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">TA\'AL-DRIVER</string>
+
+    <string name="title_activity_driver_maps">Map</string>
+
+    <string name="name">Name:</string>
+    <string name="phone_number">Phone Number:</string>
+    <string name="driver_car">Car</string>
+</resources>
