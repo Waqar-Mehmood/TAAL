@@ -39,6 +39,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import static com.android.taal_rider.AppConstants.DESTINATION;
+import static com.android.taal_rider.AppConstants.DISTANCE;
+import static com.android.taal_rider.AppConstants.DRIVER;
+import static com.android.taal_rider.AppConstants.DRIVERS;
+import static com.android.taal_rider.AppConstants.DRIVER_RATING;
+import static com.android.taal_rider.AppConstants.HISTORY;
+import static com.android.taal_rider.AppConstants.RIDE_ID;
+import static com.android.taal_rider.AppConstants.RIDE_PRICE;
+import static com.android.taal_rider.AppConstants.ROUTE_LOCATION;
+import static com.android.taal_rider.AppConstants.TIME_STAMP;
+import static com.android.taal_rider.AppConstants.USERS;
+
 public class HistorySingleActivity extends AppCompatActivity implements OnMapReadyCallback, RoutingListener {
 
     private TextView mRideLocation;
@@ -46,24 +58,22 @@ public class HistorySingleActivity extends AppCompatActivity implements OnMapRea
     private TextView mRideDate;
     private TextView mUserName;
     private TextView mUserPhone;
+    private TextView mRidePrice;
     private ImageView mUserImage;
-
     private RatingBar mRatingBar;
 
     private LatLng mDestinationLatLng;
     private LatLng mPickupLatLng;
-
     private GoogleMap mMap;
     private SupportMapFragment mMapFragment;
-
     private DatabaseReference mHistoryRideInfoDb;
 
     private List<Polyline> mPolylines;
-
+    private static final int[] COLORS = new int[]{R.color.primary_dark_material_light};
     private String mRideId;
     private String mRiderId;
     private String mDriverId;
-    private static final int[] COLORS = new int[]{R.color.primary_dark_material_light};
+    private String mDistance;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +82,7 @@ public class HistorySingleActivity extends AppCompatActivity implements OnMapRea
 
         mPolylines = new ArrayList<>();
 
-        mRideId = getIntent().getExtras().getString(AppConstants.RIDE_ID);
+        mRideId = getIntent().getExtras().getString(RIDE_ID);
 
         mMapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mMapFragment.getMapAsync(this);
@@ -83,12 +93,13 @@ public class HistorySingleActivity extends AppCompatActivity implements OnMapRea
         mUserName = findViewById(R.id.user_name);
         mUserPhone = findViewById(R.id.user_phone);
         mUserImage = findViewById(R.id.user_image);
+        mRidePrice = findViewById(R.id.ride_price);
 
         mRatingBar = findViewById(R.id.rating_bar);
 
-        mRiderId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        mRiderId = FirebaseAuth.getInstance().getUid();
 
-        mHistoryRideInfoDb = FirebaseDatabase.getInstance().getReference().child(AppConstants.HISTORY).child(mRideId);
+        mHistoryRideInfoDb = FirebaseDatabase.getInstance().getReference().child(HISTORY).child(mRideId);
 
         getRideInformation();
     }
@@ -101,24 +112,32 @@ public class HistorySingleActivity extends AppCompatActivity implements OnMapRea
                 if (dataSnapshot.exists()) {
                     for (DataSnapshot child : dataSnapshot.getChildren()) {
 
-                        if (child.getKey().equals(AppConstants.DRIVER)) {
+                        if (child.getKey().equals(DRIVER)) {
                             mDriverId = child.getValue().toString();
                             getUserInformation();
                         }
 
-                        if (child.getKey().equals(AppConstants.TIME_STAMP)) {
+                        if (child.getKey().equals(TIME_STAMP)) {
                             mRideDate.setText(getDate(Long.valueOf(child.getValue().toString())));
                         }
 
-                        if (child.getKey().equals(AppConstants.RATING)) {
+                        if (child.getKey().equals(DRIVER_RATING)) {
                             mRatingBar.setRating(Integer.valueOf(child.getValue().toString()));
                         }
 
-                        if (child.getKey().equals(AppConstants.DESTINATION)) {
+                        if (child.getKey().equals(DISTANCE)) {
+                            mRideDistance.setText(child.getValue().toString() + " km");
+                        }
+
+                        if (child.getKey().equals(RIDE_PRICE)) {
+                            mRidePrice.setText(child.getValue().toString() + " Rs");
+                        }
+
+                        if (child.getKey().equals(DESTINATION)) {
                             mRideLocation.setText(child.getValue().toString());
                         }
 
-                        if (child.getKey().equals(AppConstants.LOCATION)) {
+                        if (child.getKey().equals(ROUTE_LOCATION)) {
                             mPickupLatLng = new LatLng(Double.valueOf(child.child("from").child("lat").getValue().toString()),
                                     Double.valueOf(child.child("from").child("lng").getValue().toString()));
                             mDestinationLatLng = new LatLng(Double.valueOf(child.child("to").child("lat").getValue().toString()),
@@ -143,16 +162,16 @@ public class HistorySingleActivity extends AppCompatActivity implements OnMapRea
             @Override
             public void onRatingChanged(RatingBar ratingBar, float rating, boolean b) {
 
-                mHistoryRideInfoDb.child(AppConstants.RATING).setValue(rating);
+                mHistoryRideInfoDb.child(DRIVER_RATING).setValue(rating);
 
-                DatabaseReference mDriverRatingDb = FirebaseDatabase.getInstance().getReference().child(AppConstants.USERS)
-                        .child(AppConstants.DRIVERS).child(mDriverId).child(AppConstants.RATING);
-                mDriverRatingDb.child(mRideId).setValue(rating);
+                DatabaseReference mDriverRatingDb = FirebaseDatabase.getInstance().getReference().child(USERS)
+                        .child(DRIVERS).child(mDriverId).child(DRIVER_RATING).child(mRideId);
+                mDriverRatingDb.setValue(rating);
             }
         });
 
-        DatabaseReference mOtherUserDB = FirebaseDatabase.getInstance().getReference().child(AppConstants.USERS)
-                .child(AppConstants.DRIVERS).child(mDriverId).child(AppConstants.USER_DETAILS);
+        DatabaseReference mOtherUserDB = FirebaseDatabase.getInstance().getReference().child(USERS)
+                .child(DRIVERS).child(mDriverId).child(AppConstants.USER_DETAILS);
         mOtherUserDB.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -257,7 +276,7 @@ public class HistorySingleActivity extends AppCompatActivity implements OnMapRea
             Polyline polyline = mMap.addPolyline(polyOptions);
             mPolylines.add(polyline);
 
-            Toast.makeText(getApplicationContext(), "Route " + (i + 1) + ": distance - " + route.get(i).getDistanceValue() + ": duration - " + route.get(i).getDurationValue(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), "Route " + (i + 1) + ": mDistance - " + route.get(i).getDistanceValue() + ": duration - " + route.get(i).getDurationValue(), Toast.LENGTH_SHORT).show();
         }
 
     }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -7,70 +8,75 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="@color/accountBackground"
-        android:gravity="center">
-
-        <ImageView
-            android:id="@+id/rider_profile_image"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:background="#E0F2F1"
-            android:src="@drawable/unknown_profile_pic" />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="center_horizontal"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingTop="16dp"
-            android:text="@string/name"
-            android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/accountBackground"
+            android:gravity="center">
 
-        <EditText
-            android:id="@+id/rider_name"
-            android:layout_width="250dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:inputType="text"
-            android:maxLines="1"
-            android:padding="16dp"
-            android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
-            android:textColor="@color/colorPrimaryDark"
-            tools:text="Waqar Mehmood" />
+            <ImageView
+                android:id="@+id/rider_profile_image"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
+                android:background="#E0F2F1"
+                android:src="@drawable/unknown_profile_pic" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingTop="16dp"
-            android:text="@string/phone_number"
-            android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/rider_number"
-            android:layout_width="250dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:inputType="phone"
-            android:padding="16dp"
-            android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
-            android:textColor="@color/colorPrimaryDark"
-            tools:text="0342-5297771" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
 
-        <Button
-            android:id="@+id/save_rider_info"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Done" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingTop="16dp"
+                android:text="@string/name"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
 
+            <EditText
+                android:id="@+id/rider_name"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:inputType="text"
+                android:maxLines="1"
+                android:padding="16dp"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
+                android:textColor="@color/colorPrimaryDark"
+                tools:text="Waqar Mehmood" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingTop="16dp"
+                android:text="@string/phone_number"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
+
+            <EditText
+                android:id="@+id/rider_number"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:inputType="phone"
+                android:padding="16dp"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
+                android:textColor="@color/colorPrimaryDark"
+                tools:text="0342-5297771" />
+
+            <Button
+                android:id="@+id/save_rider_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Done" />
+
+        </LinearLayout>
     </LinearLayout>
-
-</LinearLayout>
+</ScrollView>

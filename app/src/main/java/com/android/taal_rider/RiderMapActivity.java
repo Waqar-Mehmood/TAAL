@@ -1,9 +1,12 @@
 package com.android.taal_rider;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -15,6 +18,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,6 +43,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -50,12 +55,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.android.taal_rider.AppConstants.DESTINATION_LATITUDE;
+import static com.android.taal_rider.AppConstants.DESTINATION_LONGITUDE;
+import static com.android.taal_rider.AppConstants.DRIVERS;
+import static com.android.taal_rider.AppConstants.DRIVERS_AVAILABLE;
+import static com.android.taal_rider.AppConstants.DRIVER_RATING;
+import static com.android.taal_rider.AppConstants.LOCATION;
+import static com.android.taal_rider.AppConstants.RIDER_ID;
+import static com.android.taal_rider.AppConstants.RIDER_REQUEST;
+import static com.android.taal_rider.AppConstants.RIDE_STATUS;
+import static com.android.taal_rider.AppConstants.USERS;
+import static com.android.taal_rider.AppConstants.USER_DETAILS;
+
 public class RiderMapActivity extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         com.google.android.gms.location.LocationListener {
 
     private GoogleMap mMap;
-    private GoogleApiClient mGoogleApiClient;
+    private static GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
     private LocationRequest mLocationRequest;
     private SupportMapFragment mMapFragment;
@@ -66,8 +83,8 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
     private Marker mPickupMarker;
     private GeoQuery mGeoQuery;
     private DatabaseReference mDriverLocationReference;
-    private ValueEventListener mDriverLocationReferenceListener;
     private DatabaseReference mDriveHasEndedRef;
+    private ValueEventListener mDriverLocationReferenceListener;
     private ValueEventListener mDriveHasEndedRefListener;
 
     private LinearLayout mDriverInfo;
@@ -82,6 +99,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
     private Button mHistory;
     private RadioButton mRadioButton;
     private RadioGroup mRadioGroup;
+    private RatingBar mRatingBar;
 
     private final int LOCATION_REQUEST_CODE = 1;
     private int mRadius = 1;
@@ -97,17 +115,27 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rider_map);
 
+        // if gps is disabled show a message dialog to turn on gps
+        String mProvider = Settings.Secure.getString(getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
+        if (!mProvider.contains("gps")) {
+            buildAlertMessageNoGps();
+        }
+
         mDriverName = findViewById(R.id.r_driver_name);
         mDriverPhoneNumber = findViewById(R.id.r_driver_phone_number);
         mDriverCar = findViewById(R.id.r_driver_car);
         mDriverProfilePic = findViewById(R.id.r_driver_profile_pic);
         mDriverInfo = findViewById(R.id.r_driver_info);
+        mRatingBar = findViewById(R.id.r_driver_rating_bar);
         mRadioGroup = findViewById(R.id.rider_radio_group);
 
+        // radio button select to uber x onStart
         mRadioGroup.check(R.id.rider_uber_x);
 
+        // get rider id
         mRiderId = FirebaseAuth.getInstance().getUid();
 
+        // set destination latitude and longitude to 0, 0
         mDestinationLatLng = new LatLng(0.0, 0.0);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -119,12 +147,16 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         mLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // move to MainActivity
-                Intent intent = new Intent(RiderMapActivity.this, RiderLoginActivity.class);
-                startActivity(intent);
+                // disconnect location services
+                disconnectLocationService();
 
                 // Signing out user
                 FirebaseAuth.getInstance().signOut();
+
+                // move to MainActivity
+                Intent intent = new Intent(RiderMapActivity.this, RiderLoginActivity.class);
+                startActivity(intent);
+                finish();
             }
         });
 
@@ -188,6 +220,90 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
 
         // request permission to access gps
         requestContactsPermission();
+
+        // check for available drivers
+//        availableDrivers();
+    }
+
+    // check for available drivers
+    private void availableDrivers() {
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child(DRIVERS_AVAILABLE);
+        reference.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                if (dataSnapshot.exists()) {
+                    List<Object> map = (List<Object>) dataSnapshot.child(LOCATION).getValue();
+                    double locationLat = 0;
+                    double locationLng = 0;
+
+                    // get assigned driver latitude
+                    if (map.get(0) != null) {
+                        locationLat = Double.parseDouble(map.get(0).toString());
+                    }
+                    // get assigned driver longitude
+                    if (map.get(1) != null) {
+                        locationLng = Double.parseDouble(map.get(1).toString());
+                    }
+
+                    // store the latitude and longitude in driverLatLng
+                    LatLng driverLatLng = new LatLng(locationLat, locationLng);
+
+                    // add a marker of assigned driver on rider's map
+                    mDriverMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng)
+                            .icon(BitmapDescriptorFactory.fromResource(R.mipmap.driver_car)));
+                }
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                // remove the driver marker from rider's map
+                if (mDriverMarker != null) {
+                    mDriverMarker.remove();
+                }
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    // if gps is disabled alert box shows for
+    private void buildAlertMessageNoGps() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("GPS Network Not Enabled")
+                .setCancelable(false)
+                .setTitle("GPS Alert")
+                .setPositiveButton("Turn it On",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(
+                                    @SuppressWarnings("unused") final DialogInterface dialog,
+                                    @SuppressWarnings("unused") final int id) {
+                                startActivity(new Intent(
+                                        android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                            }
+                        })
+                .setNegativeButton("Cancel",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(final DialogInterface dialog,
+                                                @SuppressWarnings("unused") final int id) {
+                                dialog.cancel();
+
+                            }
+                        });
+        final AlertDialog alert = builder.create();
+        alert.show();
     }
 
     public void requestContactsPermission() {
@@ -272,7 +388,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
                 if (!mDriverFound && mRequestBol) {
 
                     DatabaseReference mRiderDatabase = FirebaseDatabase.getInstance().getReference()
-                            .child(AppConstants.USERS).child(AppConstants.DRIVERS).child(key).child(AppConstants.USER_DETAILS);
+                            .child(USERS).child(DRIVERS).child(key).child(USER_DETAILS);
 
                     mRiderDatabase.addValueEventListener(new ValueEventListener() {
                         @Override
@@ -290,14 +406,14 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
                                     mDriverFoundID = key;
 
                                     DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference()
-                                            .child(AppConstants.USERS).child(AppConstants.DRIVERS).child(mDriverFoundID)
-                                            .child(AppConstants.RIDER_REQUEST);
+                                            .child(USERS).child(DRIVERS).child(mDriverFoundID).child(RIDER_REQUEST);
 
                                     HashMap map = new HashMap();
-                                    map.put(AppConstants.RIDER_ID, mRiderId);
+                                    map.put(RIDER_ID, mRiderId);
                                     map.put(AppConstants.DESTINATION, mDestination);
-                                    map.put(AppConstants.DESTINATION_LATITUDE, mDestinationLatLng.latitude);
-                                    map.put(AppConstants.DESTINATION_LONGITUDE, mDestinationLatLng.longitude);
+                                    map.put(DESTINATION_LATITUDE, mDestinationLatLng.latitude);
+                                    map.put(DESTINATION_LONGITUDE, mDestinationLatLng.longitude);
+                                    map.put(RIDE_STATUS, "false");
                                     driverRef.updateChildren(map);
 
                                     mCallUber.setText("Looking for driver location...");
@@ -351,9 +467,9 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
     private void getHasRideEnded() {
 
         // get reference of assigned Rider Id
-        mDriveHasEndedRef = FirebaseDatabase.getInstance().getReference().child(AppConstants.USERS)
-                .child(AppConstants.DRIVERS).child(mDriverFoundID).child(AppConstants.RIDER_REQUEST)
-                .child(AppConstants.RIDER_ID);
+        mDriveHasEndedRef = FirebaseDatabase.getInstance().getReference().child(USERS)
+                .child(DRIVERS).child(mDriverFoundID).child(RIDER_REQUEST)
+                .child(RIDER_ID);
 
         mDriveHasEndedRefListener = mDriveHasEndedRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -390,8 +506,8 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         if (mDriverFoundID != null) {
             // get mDriverLocationReference of driver found form Drivers
             DatabaseReference reference = FirebaseDatabase.getInstance().getReference()
-                    .child(AppConstants.USERS).child(AppConstants.DRIVERS).child(mDriverFoundID)
-                    .child(AppConstants.RIDER_REQUEST);
+                    .child(USERS).child(DRIVERS).child(mDriverFoundID)
+                    .child(RIDER_REQUEST);
 
             // remove the assigned rider from driver
             reference.removeValue();
@@ -430,16 +546,18 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
     // get assigned driver info and show on rider's map
     private void getDriverInfo() {
 
+        // show driver details on rider maps
         mDriverInfo.setVisibility(View.VISIBLE);
 
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference()
-                .child(AppConstants.USERS).child(AppConstants.DRIVERS).child(mDriverFoundID)
-                .child(AppConstants.USER_DETAILS);
+                .child(USERS).child(DRIVERS).child(mDriverFoundID);
 
-        databaseReference.addValueEventListener(new ValueEventListener() {
+        // get values from user details node
+        databaseReference.child(USER_DETAILS).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists() && dataSnapshot.getChildrenCount() > 0) {
+
                     Map<String, Object> map = (Map<String, Object>) dataSnapshot.getValue();
 
                     if (map.get(AppConstants.NAME) != null) {
@@ -470,12 +588,37 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
 
             }
         });
+
+        // get values from rating node
+        databaseReference.child(DRIVER_RATING).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    int ratingSum = 0;
+                    int ratingsTotal = 0;
+
+                    for (DataSnapshot child : dataSnapshot.getChildren()) {
+                        ratingSum = ratingSum + Integer.valueOf(child.getValue().toString());
+                        ratingsTotal++;
+                    }
+
+                    if (ratingsTotal != 0) {
+                        mRatingBar.setRating(ratingSum / ratingsTotal);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
     }
 
     // get exact location of driver
     private void getDriverLocation() {
 
-        mDriverLocationReference = FirebaseDatabase.getInstance().getReference().child(AppConstants.DRIVERS_WORKING)
+        mDriverLocationReference = FirebaseDatabase.getInstance().getReference().child(AppConstants.DRIVERS_AVAILABLE)
                 .child(mDriverFoundID).child(AppConstants.LOCATION);
 
         mDriverLocationReferenceListener = mDriverLocationReference.addValueEventListener(new ValueEventListener() {
@@ -526,7 +669,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
 
                     // add a marker of assigned driver on rider's map
                     mDriverMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("your driver")
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.driver_car)));
+                            .icon(BitmapDescriptorFactory.fromResource(R.mipmap.driver_car)));
                 }
             }
 
@@ -604,7 +747,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         // update location of rider on location changed
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(13));
     }
 
     @Override
@@ -612,5 +755,10 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         super.onBackPressed();
 
         finishAffinity();
+    }
+
+    // disconnect the driver
+    public void disconnectLocationService() {
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
     }
 }

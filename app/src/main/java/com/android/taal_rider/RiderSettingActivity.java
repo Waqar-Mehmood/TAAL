@@ -28,7 +28,7 @@ import java.util.Map;
 
 public class RiderSettingActivity extends AppCompatActivity {
 
-    private DatabaseReference  mDatabaseReference;
+    private DatabaseReference mDatabaseReference;
 
     private EditText mRiderName;
     private EditText mRiderNumber;
@@ -38,6 +38,7 @@ public class RiderSettingActivity extends AppCompatActivity {
     private static final int RC_PHOTO_PICKER = 2;
 
     private String mRiderID;
+    private String mImageUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,12 +111,8 @@ public class RiderSettingActivity extends AppCompatActivity {
         mRiderSaveInfo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
                 // save user info to database
                 saveUserInfo();
-
-                Intent intent = new Intent(RiderSettingActivity.this, RiderMapActivity.class);
-                startActivity(intent);
             }
         });
 
@@ -124,16 +121,23 @@ public class RiderSettingActivity extends AppCompatActivity {
 
     }
 
-    // save user info to database
+    // save user data into database
     private void saveUserInfo() {
-
-        // username, phone number
+        // username, phone number, image url
         Map userInfo = new HashMap();
 
         userInfo.put(AppConstants.NAME, mRiderName.getText().toString());
         userInfo.put(AppConstants.PHONE_NUMBER, mRiderNumber.getText().toString());
+        userInfo.put(AppConstants.PROFILE_IMAGE_URL, mImageUrl);
 
-        mDatabaseReference.updateChildren(userInfo);
+        mDatabaseReference.updateChildren(userInfo, new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                Intent intent = new Intent(RiderSettingActivity.this, RiderMapActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 
     // get rider info and populate settings activity
@@ -193,12 +197,8 @@ public class RiderSettingActivity extends AppCompatActivity {
 
                     Uri imageUrl = taskSnapshot.getDownloadUrl();
 
-                    Map userInfo = new HashMap();
-
                     if (imageUrl != null) {
-                        userInfo.put(AppConstants.PROFILE_IMAGE_URL, imageUrl.toString());
-
-                        mDatabaseReference.updateChildren(userInfo);
+                        mImageUrl = imageUrl.toString();
                     }
                 }
             });

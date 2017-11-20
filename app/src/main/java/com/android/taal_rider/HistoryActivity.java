@@ -32,7 +32,7 @@ public class HistoryActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history);
 
-        mRiderId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        mRiderId = FirebaseAuth.getInstance().getUid();
 
         mHistoryRecyclerView = findViewById(R.id.history_recycler_view);
         mHistoryRecyclerView.setNestedScrollingEnabled(true);
