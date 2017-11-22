@@ -9,9 +9,17 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -61,13 +69,16 @@ import static com.android.taal_rider.AppConstants.DRIVERS;
 import static com.android.taal_rider.AppConstants.DRIVERS_AVAILABLE;
 import static com.android.taal_rider.AppConstants.DRIVER_RATING;
 import static com.android.taal_rider.AppConstants.LOCATION;
+import static com.android.taal_rider.AppConstants.RIDERS_REQUEST;
 import static com.android.taal_rider.AppConstants.RIDER_ID;
 import static com.android.taal_rider.AppConstants.RIDER_REQUEST;
 import static com.android.taal_rider.AppConstants.RIDE_STATUS;
+import static com.android.taal_rider.AppConstants.SERVICE;
 import static com.android.taal_rider.AppConstants.USERS;
 import static com.android.taal_rider.AppConstants.USER_DETAILS;
 
-public class RiderMapActivity extends FragmentActivity implements OnMapReadyCallback,
+public class RiderMapActivity extends AppCompatActivity
+        implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         com.google.android.gms.location.LocationListener {
 
@@ -115,12 +126,25 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rider_map);
 
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
+
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+
         // if gps is disabled show a message dialog to turn on gps
         String mProvider = Settings.Secure.getString(getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
         if (!mProvider.contains("gps")) {
             buildAlertMessageNoGps();
         }
 
+        // initializing views
         mDriverName = findViewById(R.id.r_driver_name);
         mDriverPhoneNumber = findViewById(R.id.r_driver_phone_number);
         mDriverCar = findViewById(R.id.r_driver_car);
@@ -128,6 +152,11 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         mDriverInfo = findViewById(R.id.r_driver_info);
         mRatingBar = findViewById(R.id.r_driver_rating_bar);
         mRadioGroup = findViewById(R.id.rider_radio_group);
+        mLogout = findViewById(R.id.rider_logout);
+        mSettings = findViewById(R.id.rider_settings);
+        mCallUber = findViewById(R.id.call_uber);
+        mCancelUber = findViewById(R.id.cancel_uber);
+        mHistory = findViewById(R.id.history);
 
         // radio button select to uber x onStart
         mRadioGroup.check(R.id.rider_uber_x);
@@ -143,7 +172,6 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
                 .findFragmentById(R.id.rider_map);
 
         // rider logout button
-        mLogout = findViewById(R.id.rider_logout);
         mLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -153,7 +181,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
                 // Signing out user
                 FirebaseAuth.getInstance().signOut();
 
-                // move to MainActivity
+                // move to RiderMapActivity
                 Intent intent = new Intent(RiderMapActivity.this, RiderLoginActivity.class);
                 startActivity(intent);
                 finish();
@@ -161,7 +189,6 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         });
 
         // rider setting button
-        mSettings = findViewById(R.id.rider_settings);
         mSettings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -170,8 +197,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
             }
         });
 
-        // Request Uber and set user location to RiderRequest node under user_id
-        mCallUber = findViewById(R.id.call_uber);
+        // Request Uber and set rider location to RiderRequest node under user id
         mCallUber.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -180,7 +206,6 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         });
 
         // Cancel Uber request
-        mCancelUber = findViewById(R.id.cancel_uber);
         mCancelUber.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -191,7 +216,6 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         });
 
         // History of previous rides
-        mHistory = findViewById(R.id.history);
         mHistory.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -348,11 +372,14 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         if (mRequestBol == false) {
             mRequestBol = true;
 
+            // initializing mRadioButton
             mRadioButton = findViewById(mRadioGroup.getCheckedRadioButtonId());
+
+            // get the service, the rider want to use
             mRequestService = mRadioButton.getText().toString();
 
             // get reference of RiderRequest node
-            DatabaseReference reference = FirebaseDatabase.getInstance().getReference(AppConstants.RIDERS_REQUEST);
+            DatabaseReference reference = FirebaseDatabase.getInstance().getReference(RIDERS_REQUEST);
 
             // adding rider's current location to database under RidersRequest node
             GeoFire geoFire = new GeoFire(reference);
@@ -372,8 +399,8 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
 
     // get closest driver
     private void getClosestDriver() {
-        // get mDriverLocationReference of DriversAvailable node
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference(AppConstants.DRIVERS_AVAILABLE);
+        // get reference of DriversAvailable node
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference(DRIVERS_AVAILABLE);
 
         // put mDriverLocationReference to GeoFire
         GeoFire geoFire = new GeoFire(reference);
@@ -397,13 +424,12 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
 
                                 Map<String, Object> driverMap = (Map<String, Object>) dataSnapshot.getValue();
 
-                                if (mDriverFound) {
-                                    return;
-                                }
-
-                                if (driverMap.get(AppConstants.SERVICE).equals(mRequestService)) {
+                                if (driverMap.get(SERVICE).equals(mRequestService)) {
                                     mDriverFound = true;
                                     mDriverFoundID = key;
+
+                                    Toast.makeText(RiderMapActivity.this,
+                                            "Driver ID: " + mDriverFoundID, Toast.LENGTH_SHORT).show();
 
                                     DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference()
                                             .child(USERS).child(DRIVERS).child(mDriverFoundID).child(RIDER_REQUEST);
@@ -413,18 +439,15 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
                                     map.put(AppConstants.DESTINATION, mDestination);
                                     map.put(DESTINATION_LATITUDE, mDestinationLatLng.latitude);
                                     map.put(DESTINATION_LONGITUDE, mDestinationLatLng.longitude);
-                                    map.put(RIDE_STATUS, "false");
-                                    driverRef.updateChildren(map);
+                                    map.put(RIDE_STATUS, "");
+                                    driverRef.updateChildren(map, new DatabaseReference.CompletionListener() {
+                                        @Override
+                                        public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
 
-                                    mCallUber.setText("Looking for driver location...");
+                                            checkForRiderRequest();
 
-                                    // get exact location of driver
-                                    getDriverLocation();
-
-                                    // get assigned driver info and show on rider's map
-                                    getDriverInfo();
-
-                                    getHasRideEnded();
+                                        }
+                                    });
                                 }
                             }
                         }
@@ -449,7 +472,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
 
             @Override
             public void onGeoQueryReady() {
-                // if the driver on found on given mRadius then increase the mRadius and check again
+                // if the driver not found on given mRadius then increase the mRadius and check again
                 if (!mDriverFound) {
                     mRadius++;
                     getClosestDriver();
@@ -463,13 +486,67 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         });
     }
 
+    private void checkForRiderRequest() {
+        Toast.makeText(RiderMapActivity.this,
+                "checkForRiderRequest()", Toast.LENGTH_SHORT).show();
+
+        DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference()
+                .child(USERS).child(DRIVERS).child(mDriverFoundID).child(RIDER_REQUEST).child(RIDE_STATUS);
+
+        driverRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+                String value = dataSnapshot.getValue(String.class);
+
+                if (!TextUtils.isEmpty(value)) {
+                    if (value.equals("true")) {
+                        Toast.makeText(RiderMapActivity.this,
+                                "driver accepted the ride", Toast.LENGTH_SHORT).show();
+
+                        mCallUber.setText("Looking for driver location...");
+
+                        // get exact location of driver
+                        getDriverLocation();
+
+                        // get assigned driver info and show on rider's map
+                        getDriverInfo();
+
+                        // if ride is ended
+//                      getHasRideEnded();
+                    } else if (value.equals("false")) {
+                        Toast.makeText(RiderMapActivity.this,
+                                "driver cancel the ride", Toast.LENGTH_SHORT).show();
+
+                        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child(USERS).child(DRIVERS)
+                                .child(mDriverFoundID).child(RIDER_REQUEST);
+                        reference.removeValue();
+
+                        mDriverFound = false;
+                        mDriverFoundID = "";
+                        mRadius += 2;
+
+                        getClosestDriver();
+                    } else {
+                        Toast.makeText(RiderMapActivity.this,
+                                "not working", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
     // get assigned rider information
     private void getHasRideEnded() {
 
         // get reference of assigned Rider Id
         mDriveHasEndedRef = FirebaseDatabase.getInstance().getReference().child(USERS)
-                .child(DRIVERS).child(mDriverFoundID).child(RIDER_REQUEST)
-                .child(RIDER_ID);
+                .child(DRIVERS).child(mDriverFoundID).child(RIDER_REQUEST).child(RIDER_ID);
 
         mDriveHasEndedRefListener = mDriveHasEndedRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -518,7 +595,7 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         mDriverFound = false;
         mRadius = 1;
 
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child(AppConstants.RIDERS_REQUEST);
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child(RIDERS_REQUEST);
 
         // remove location of rider form RiderRequest node
         GeoFire geoFire = new GeoFire(reference);
@@ -750,15 +827,65 @@ public class RiderMapActivity extends FragmentActivity implements OnMapReadyCall
         mMap.animateCamera(CameraUpdateFactory.zoomTo(13));
     }
 
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-
-        finishAffinity();
-    }
-
     // disconnect the driver
     public void disconnectLocationService() {
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+    }
+
+    @Override
+    public void onBackPressed() {
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else {
+            finishAffinity();
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
+
+        if (id == R.id.nav_camera) {
+            // Handle the camera action
+        } else if (id == R.id.nav_gallery) {
+
+        } else if (id == R.id.nav_slideshow) {
+
+        } else if (id == R.id.nav_manage) {
+
+        } else if (id == R.id.nav_share) {
+
+        } else if (id == R.id.nav_send) {
+
+        }
+
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
     }
 }

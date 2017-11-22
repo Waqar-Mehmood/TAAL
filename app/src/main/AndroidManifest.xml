@@ -27,16 +27,12 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
-        <activity
-            android:name=".RiderMapActivity"
-            android:label="@string/title_activity_rider_map" />
         <activity android:name=".RiderSettingActivity" />
         <activity android:name=".HistoryActivity" />
         <activity android:name=".HistorySingleActivity" />
         <activity
-            android:name=".MainActivity"
-            android:label="@string/title_activity_main"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:name=".RiderMapActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
     </application>
 
 </manifest>

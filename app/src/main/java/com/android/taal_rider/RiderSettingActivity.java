@@ -118,7 +118,6 @@ public class RiderSettingActivity extends AppCompatActivity {
 
         // get rider info and populate settings activity
         getRiderInfo();
-
     }
 
     // save user data into database
